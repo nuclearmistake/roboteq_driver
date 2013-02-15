@@ -3,8 +3,11 @@ roboteq_driver
 
 todo: documentation... the sort of thing this should eventually become.
 
-      Driver for the Roboteq MDC22XX motor controller.
-      Based on a pre-2/26/2012 version of Auburn University's Autonomous Lawnmower project (originally by William Woodall)'s AX2550 driver, merged with a similarly old version of his MDC2250 driver, as well as some very up to date (half backwards compatible) dependancies from PARTS UNKNOWN/UNDOCUMENTED
+Driver for the Roboteq MDC22XX motor controller.
+Based on a pre-2/26/2012 version of Auburn University's Autonomous Lawnmower project (originally by William Woodall)'s AX2550 driver, 
+...merged with a similarly old version of his MDC2250 driver, 
+...as well as some very up to date (half backwards compatible) dependancies from PARTS UNKNOWN/UNDOCUMENTED
+...and some voodoo magic to make it behave better
   
 ### License
 
