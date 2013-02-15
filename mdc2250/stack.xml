@@ -1,0 +1,9 @@
+<stack>
+  <description brief="mdc2250">mdc2250</description>
+  <author>Maintained by William Woodall</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/mdc2250</url>
+  <depend stack="ros" />
+
+</stack>

@@ -1,0 +1,4 @@
+*build/
+build
+serial/_gtest_from_src
+serial_utils/_gtest_from_src
