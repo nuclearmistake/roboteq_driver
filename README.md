@@ -5,15 +5,18 @@ todo: documentation... the sort of thing this should eventually become.
 
 Driver for the Roboteq MDC22XX motor controller.
 Based on a pre-2/26/2012 version of Auburn University's Autonomous Lawnmower project (originally by William Woodall)'s AX2550 driver, 
+
 ...merged with a similarly old version of his MDC2250 driver, 
+
 ...as well as some very up to date (half backwards compatible) dependancies from PARTS UNKNOWN/UNDOCUMENTED
+
 ...and some voodoo magic to make it behave better
   
 ### License
 
 The BSD License
 
-Copyright (c) 2012 Eric McCann
+Copyright (c) 2013 Eric McCann
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: 
 
@@ -28,4 +31,5 @@ Eric McCann <nuclearmistake@gmail.com>
 ### Props
 
 William Woodall <wjwwood@gmail.com>
+
 John Harrison <ash.gti@gmail.com>
