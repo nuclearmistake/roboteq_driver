@@ -1,11 +1,12 @@
 <launch>
     <arg name="serial_port1" default="/dev/motor_controller1" />
     <arg name="serial_port2" default="" />
-    <arg name="position_covariance" value="0.2" />
-    <arg name="rotation_covariance" value="0.2" />
-    <arg name="left_is_1_right_is_2" value="true" />
+    <arg name="position_covariance" default="0.2" />
+    <arg name="rotation_covariance" default="0.2" />
+    <arg name="left_is_1_right_is_2" default="true" />
+    <arg name="respawn" default="false" />
     
-    <node pkg="mdc2250" type="quad_drive_node" name="quad" output="screen" respawn="true" >
+    <node pkg="mdc2250" type="quad_drive_node" name="quad" output="screen" respawn="$(arg respawn)" >
         <param name="serial_port1" value="$(arg serial_port1)"/>
         <param name="serial_port2" value="$(arg serial_port2)"/>
         <param name="position_covariance" value="$(arg position_covariance)"/>

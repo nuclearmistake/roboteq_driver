@@ -1,1 +1,1 @@
-SUBSYSTEM=="tty", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="8D9B25655254", SYMLINK+="motor_controller1"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="8D9B25655254", SYMLINK+="motor_controller1", MODE="666"

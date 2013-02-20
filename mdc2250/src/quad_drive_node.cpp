@@ -50,11 +50,11 @@ bool isConnected() { for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++) if (mc[i] == 
 
 void telemetry_callback1(const std::string &telemetry) {
 	//insert meat of tf math into one of these, or dump values in globals and have a thread crunch nubahz
-	std::cout << "Got telemetry1: " << telemetry << std::endl;
+	ROS_DEBUG("Got telemetry1: %s", telemetry.c_str());
 }
 void telemetry_callback2(const std::string &telemetry) {
 	//insert meat of tf math into one of these, or dump values in globals and have a thread crunch nubahz
-	std::cout << "Got telemetry2: " << telemetry << std::endl;
+	ROS_DEBUG("Got telemetry2: %s", telemetry.c_str());
 }
 
 void init(MDC2250 *m)
@@ -71,9 +71,34 @@ void init(MDC2250 *m)
 	}
 }
 
+/*  _1_is_left_2_is_right
+        <!-- ====================== -->
+        <!-- if true -->
+        <!--     FRONT
+           [m1]         [m1]
+            ^            ^
+           mc1          mc2
+            v            v
+           [m2]         [m2]        
+        -->
+        <!-- ====================== -->
+        <!-- if false -->
+        <!--     FRONT
+           [m1] < mc1 > [m2]
+
+
+
+           [m1] < mc2 > [m2]
+        -->
+        <!-- ====================== -->
+*/
 void quad_move(double left, double right)
 {
-
+    if (NUM_VALID_CONTROLLER_PORTS == 1)
+    {
+        //mc[0]->
+        return;
+    }    
 }
 
 double wrapToPi(double angle) {
@@ -281,7 +306,7 @@ int main(int argc, char **argv) {
     	for (int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++){
 			ROS_INFO("MDC2250[%d] connecting to port %s", i, port[i].c_str());
 			try {
-				mc[i] = new MDC2250(true);
+				mc[i] = new MDC2250();
 
 	            mc[i]->setExceptionHandler(errorMsgCallback);
 	            mc[i]->setInfoHandler(infoMsgCallback);
@@ -292,15 +317,22 @@ int main(int argc, char **argv) {
 				init(mc[i]);
 			} catch(std::exception &e) {
 				ROS_ERROR("Failed to connect to the MDC2250: %s", e.what());
-				mc[i]->disconnect();
+			    if (!mc[i]->isConnected())
+                {                
+                    ROS_WARN("UH OH! NOT CONNECTED!");
+				    for(int j=i-1;j>=0;j++)
+					    mc[j]->disconnect();
+                }
 			}
 			catch(ConnectionFailedException &e) {
-				ROS_ERROR("Failed to connect to the MDC2250: %s", e.what());
-				mc[i]->disconnect();
+				ROS_ERROR("Failed to connect to the MDC2250: %s", e.what());				
+			    if (!mc[i]->isConnected())
+                {                
+                    ROS_WARN("UH OH! NOT CONNECTED!");
+				    for(int j=i-1;j>=0;j++)
+					    mc[j]->disconnect();
+                }
 			}
-			if (!mc[i]->isConnected())
-				for(int j=i-1;j>=0;j++)
-					mc[j]->disconnect();
     	}
         while(isConnected() && ros::ok()) {
             ros::spinOnce();
@@ -308,14 +340,18 @@ int main(int argc, char **argv) {
         }
         for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
         {
+            if (mc[i]->isConnected())
+                mc[i]->disconnect();
 			free(mc[i]);
 			mc[i] = NULL;
         }
-        if(!ros::ok())
+        if(!ros::ok())        
             break;
         ROS_INFO("Will try to reconnect to the MCD2250 in 5 seconds.");
         ros::Duration(5).sleep();
     }
+
+    ROS_WARN("Broke out of infinite loop");
 
     return 0;
 }

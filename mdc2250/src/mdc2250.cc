@@ -91,23 +91,29 @@ void MDC2250::connect(std::string port, size_t watchdog_time, bool echo) {
 
   try {
     // Setup and open serial port
+    this->info("Set up port");
     this->serial_port_.setPort(port_);
     this->serial_port_.setBaudrate(115200);
+    this->info("Set timeout");
     serial::Timeout to = serial::Timeout::simpleTimeout(100);
     this->serial_port_.setTimeout(to);
+    this->info("Opening...");
     this->serial_port_.open();
+    this->info("Opened");
 
     // Setup filters
+    this->info("Set up filters");
     this->setupFilters();
 
     // Setup and start serial listener
+    this->info("Listening...");
     listener_.startListening(this->serial_port_);
   } catch (std::exception &e) {
     throw(ConnectionFailedException(e.what()));
   }
 
   // Reset the controller to ensure clean setup
-  this->reset();
+  //this->reset();
   this->connected_ = true;
 
   // Ping the controller for presence
@@ -117,6 +123,8 @@ void MDC2250::connect(std::string port, size_t watchdog_time, bool echo) {
     throw(ConnectionFailedException("Failed to get a response "
                                     "from ping.",1));
   }
+  else
+    this->info("Ping accomplished");
 
   // Make sure we aren't etopped
   this->detect_emergency_stop_();
@@ -127,6 +135,7 @@ void MDC2250::connect(std::string port, size_t watchdog_time, bool echo) {
 
   // Get the device version
   {
+    this->info("Querying device version");
     std::string res, fail_why;
     if (!this->issueQuery("?$1E",
                           SerialListener::startsWith("$1E="),
