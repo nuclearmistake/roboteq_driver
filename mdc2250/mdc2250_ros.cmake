@@ -30,6 +30,7 @@ include_directories(include)
 set(MDC2250_SRCS src/mdc2250.cc)
 
 rosbuild_genmsg()
+rosbuild_gensrv()
 
 # Build the mdc2250 library
 rosbuild_add_library(${PROJECT_NAME} ${MDC2250_SRCS})

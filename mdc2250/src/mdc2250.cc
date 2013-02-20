@@ -421,6 +421,9 @@ MDC2250::commandMotor(size_t motor_index, ssize_t motor_effort) {
 
 void
 MDC2250::commandMotors(ssize_t motor1_effort, ssize_t motor2_effort) {
+  commandMotor(1, motor1_effort);
+  commandMotor(2, motor2_effort);
+  return;
   // Validate parameters
   if (motor1_effort < -1000 || motor1_effort > 1000) {
     // motor1_effort is not valid
