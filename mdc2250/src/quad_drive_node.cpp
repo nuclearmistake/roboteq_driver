@@ -44,7 +44,7 @@ tf::TransformBroadcaster *odom_broadcaster;
 
 static double ENCODER_RESOLUTION = 250*4;
 double wheel_circumference = 0.0;
-double wheel_base_length = 0.0;
+double robot_width = 0.0;
 double wheel_diameter = 0.0;
 std::string odom_frame_id;
 
@@ -135,9 +135,11 @@ double wrapToPi(double angle) {
 void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     if(!isConnected())
         return;
+
+
     // Convert mps to rpm
-    double A = msg->linear.x;
-    double B = msg->angular.z * (wheel_base_length/2.0);
+    double A = msg->linear.x - msg->angular.z * (robot_width/2.0);
+    double B = msg->linear.x + msg->angular.z * (robot_width/2.0);
 
     double A_rpm = A * (60.0 / (M_PI*wheel_diameter));
     double B_rpm = B * (60.0 / (M_PI*wheel_diameter));
@@ -160,17 +162,7 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
     //ROS_INFO("%f %f", A_rel, B_rel);
 
-    //A_rel is RELATIVE POSITION!, B_rel is direction, so let's get per-wheel speeds at that angle... need a motion model or encoders to use this bit
-    double l, r;
-    //A_rel /= cos(B_rel);
-    l = A_rel * sin(M_PI/4 - B_rel) + B_rel;
-    r = A_rel * cos(M_PI/4 - B_rel) + B_rel;
-
-    //fix domain, but BREAK SANITY!
-    //l *= 82.653241797;
-    //r *= 82.653241797;
-
-    quad_move(l, r);
+    quad_move(-A_rel, B_rel);
 }
 
 void errorMsgCallback(const std::exception &ex) {
@@ -222,8 +214,8 @@ void encode(int left, int right) {
     v += r_L/2.0 * left_v;
     v += r_R/2.0 * right_v;
 
-    w += r_R/wheel_base_length * right_v;
-    w -= r_L/wheel_base_length * left_v;
+    w += r_R/robot_width * right_v;
+    w -= r_L/robot_width * left_v;
 
 
     // Update the states based on model and input
@@ -393,7 +385,7 @@ int main(int argc, char **argv) {
     wheel_circumference = wheel_diameter * M_PI;
 
     // Wheel base length
-    priv.param("wheel_base_length", wheel_base_length, 0.9144);
+    priv.param("robot_width", robot_width, 0.9144);
 
     // Odom Frame id parameter
     priv.param("odom_frame_id", odom_frame_id, std::string("odom"));
@@ -401,8 +393,6 @@ int main(int argc, char **argv) {
     // Load up some covariances from parameters
     priv.param("rotation_covariance",rot_cov, 1.0);
     priv.param("position_covariance",pos_cov, 1.0);
-
-    n.param("left_is_1_right_is_2", _1_is_left_2_is_right, true);
 
     // Odometry Publisher
     odom_pub = n.advertise<nav_msgs::Odometry>("odom", 5);
@@ -433,25 +423,24 @@ int main(int argc, char **argv) {
 	            mc[i]->setInfoHandler(infoMsgCallback);
 
 	            //                      10000, true
-				mc[i]->connect(port[i], 10000, true);
+				mc[i]->connect(port[i], 100, false);
 
 				init(mc[i]);
 			} catch(ConnectionFailedException &e) {
 				ROS_ERROR("Failed to connect to the MDC2250: %s", e.what());
-			    if (!mc[i]->isConnected())
-                {                
-                    ROS_WARN("UH OH! NOT CONNECTED!");
-				    for(int j=i-1;j>=0;j++)
-					    mc[j]->disconnect();
-                }
+				if (mc[i]->isConnected())
+					try{ mc[i]->disconnect(); ROS_INFO("Disconnected from mc[%d]", i); }
+					catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from mc[%d]: %s", i, e.what()); }
+				for(int j=i-1;j>=0;j++)
+					try{ mc[j]->disconnect(); ROS_INFO("Disconnected from little brother mc[%d]", j); }
+					catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from little brother mc[%d]: %s", j, e.what()); }
 			} catch(std::exception &e) {
 				ROS_ERROR("SOME exception occured while connecting to the MDC2250: %s", e.what());
-			    if (!mc[i]->isConnected())
-                {                
-                    ROS_WARN("UH OH! NOT CONNECTED!");
-				    for(int j=i-1;j>=0;j++)
-					    mc[j]->disconnect();
-                }
+		    	try{ mc[i]->disconnect(); ROS_INFO("Disconnected from mc[%d]", i); }
+		    	catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from mc[%d]: %s", i, e.what()); }
+			    for(int j=i-1;j>=0;j++)
+			    	try{ mc[j]->disconnect(); ROS_INFO("Disconnected from little brother mc[%d]", j); }
+			    	catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from little brother mc[%d]: %s", j, e.what()); }
 			}
     	}
         while(isConnected() && ros::ok()) {
