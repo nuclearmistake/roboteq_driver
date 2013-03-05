@@ -19,6 +19,9 @@
 #include <mdc2250/decode.h>
 #include <mdc2250/mdc2250.h>
 
+#define ENCODER_CPR 360                //  360 clicks / rotation encoders
+#define ENCODER_RPM_AT_1000_EFFORT 120 //  ~2 m/s
+
 using namespace mdc2250;
 
 typedef MDC2250* pMDC2250;
@@ -36,13 +39,14 @@ typedef struct encoder ENCODER;
 ENCODER enc[2];
 pMDC2250 mc[2];
 bool enc_init[2][3];
+ros::Time lasttick[2];
+bool erroroccurred;
 
 int NUM_VALID_CONTROLLER_PORTS=2;
 ros::Publisher odom_pub;
 ros::Publisher encoder_pub;
 tf::TransformBroadcaster *odom_broadcaster;
 
-static double ENCODER_RESOLUTION = 250*4;
 double wheel_circumference = 0.0;
 double robot_width = 0.0;
 double wheel_diameter = 0.0;
@@ -74,7 +78,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
-bool isConnected() { for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++) if (mc[i] == NULL || !mc[i]->isConnected()) return false; return true; }
+bool isConnected() { ros::Time n = ros::Time::now(); for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++) {ros::Duration d = n - lasttick[i]; if (d.toSec() > 0.25 || mc[i] == NULL || !mc[i]->isConnected()) return false; } return true; }
 
 double _left, _right;
 
@@ -144,38 +148,45 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     double A_rpm = A * (60.0 / (M_PI*wheel_diameter));
     double B_rpm = B * (60.0 / (M_PI*wheel_diameter));
 
-    // Convert rpm to relative
-    double A_rel = (A_rpm * 250 * 64) / 1171.875; //58593.75;
-    double B_rel = (B_rpm * 250 * 64) / 1171.875; //58593.75;
+    // Convert RPM to effort
+    double A_eff = A_rpm * 1000 / ENCODER_RPM_AT_1000_EFFORT;
+    double B_eff = B_rpm * 1000 / ENCODER_RPM_AT_1000_EFFORT;
 
-    //ROS_INFO("Arpm: %f, Arel: %f, Brpm: %f, Brel: %f", A_rpm, A_rel, B_rpm, B_rel);
+    //ROS_INFO("Arpm: %f, Aeff: %f, Brpm: %f, Beff: %f", A_rpm, A_eff, B_rpm, B_eff);
 
     // Bounds check
-    if(A_rel > A_MAX)
-        A_rel = A_MAX;
-    if(A_rel < -1*A_MAX)
-        A_rel = -1*A_MAX;
-    if(B_rel > B_MAX)
-        B_rel = B_MAX;
-    if(B_rel < -1*B_MAX)
-        B_rel = -1*B_MAX;
+    if(A_eff > A_MAX)
+    	A_eff = A_MAX;
+    if(A_eff < -1*A_MAX)
+    	A_eff = -1*A_MAX;
+    if(B_eff > B_MAX)
+    	B_eff = B_MAX;
+    if(B_eff < -1*B_MAX)
+    	B_eff = -1*B_MAX;
 
     //ROS_INFO("%f %f", A_rel, B_rel);
 
-    quad_move(-A_rel, B_rel);
+    quad_move(-A_eff, B_eff);
+}
+void errorMsgCallback(int m, const std::exception &ex) {
+    ROS_ERROR("mc[%d] -- %s", m, ex.what());
+    erroroccurred = true;
+}
+void errorMsgCallback1(const std::exception &ex) {
+    errorMsgCallback(1, ex);
+}
+void errorMsgCallback2(const std::exception &ex) {
+    errorMsgCallback(2, ex);
 }
 
-void errorMsgCallback(const std::exception &ex) {
-    ROS_WARN("%s", ex.what());
-    for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
-    {
-		free(mc[i]);
-		mc[i] = NULL;
-    }
+void infoMsgCallback(int m, const std::string &msg) {
+    ROS_INFO("mc[%d] -- %s", m, msg.c_str());
 }
-
-void infoMsgCallback(const std::string &msg) {
-    ROS_INFO("%s", msg.c_str());
+void infoMsgCallback1(const std::string &ex) {
+	infoMsgCallback(1, ex);
+}
+void infoMsgCallback2(const std::string &ex) {
+	infoMsgCallback(2, ex);
 }
 
 void encode(int left, int right) {
@@ -189,10 +200,10 @@ void encode(int left, int right) {
     prev_time = now;
 
     // Convert to mps for each wheel from delta encoder ticks
-    double left_v = left * 2*M_PI / ENCODER_RESOLUTION;
+    double left_v = left * 2*M_PI / ENCODER_CPR;
     left_v /= delta_time;
     // left_v *= encoder_poll_rate;
-    double right_v = right * 2*M_PI / ENCODER_RESOLUTION;
+    double right_v = right * 2*M_PI / ENCODER_CPR;
     right_v /= delta_time;
     // right_v *= encoder_poll_rate;
 
@@ -267,6 +278,7 @@ void encode(int left, int right) {
 }
 
 void telemetry_callback(int i, const std::string &telemetry) {
+	lasttick[i]=ros::Time::now();
 	//insert meat of tf math into one of these, or dump values in globals and have a thread crunch nubahz
 	std::vector<std::string> TandVal = split(telemetry, '=');
 	if (TandVal.size() != 2)
@@ -283,20 +295,28 @@ void telemetry_callback(int i, const std::string &telemetry) {
 		case 'V': for(int j=0;j<s;j++) enc[i].V[j] = atoi(vals[j].c_str()); enc_init[i][1] = true; break;
 		case 'A': for(int j=0;j<s;j++) enc[i].A[j] = atoi(vals[j].c_str()); enc_init[i][2] = true; break;
 	}
-	printf("L=%f, R=%f, mc[0]{ C=%d:%d, V=%d:%d:%d, A=%d:%d }  mc[1]{ C=%d:%d, V=%d:%d:%d, A=%d:%d } \r", _left, _right,
-			(int)(enc[0].lastC[0] - enc[0].C[0]), (int)(enc[0].lastC[1] - enc[0].C[1]),
-			(int)enc[0].V[0], (int)enc[0].V[1], (int)enc[0].V[2],
-			(int)enc[0].A[0], (int)enc[0].A[1],
-			(int)(enc[1].lastC[0] - enc[1].C[0]), (int)(enc[1].lastC[1] - enc[1].C[1]),
-			(int)enc[1].V[0], (int)enc[1].V[1], (int)enc[1].V[2],
-			(int)enc[1].A[0], (int)enc[1].A[1]);
-	fflush(stdout);
 	if (NUM_VALID_CONTROLLER_PORTS==1 && enc_init[0][0] && enc_init[0][1] && enc_init[0][2])
 	{
+		printf("L=%f, R=%f, mc[0]{ C=%d:%d, V=%d:%d:%d, A=%d:%d }  mc[1]{ C=%d:%d, V=%d:%d:%d, A=%d:%d } \r", _left, _right,
+				(int)(enc[0].C[0]), (int)(enc[0].C[1]),
+				(int)enc[0].V[0], (int)enc[0].V[1], (int)enc[0].V[2],
+				(int)enc[0].A[0], (int)enc[0].A[1],
+				(int)(enc[1].C[0]), (int)(enc[1].C[1]),
+				(int)enc[1].V[0], (int)enc[1].V[1], (int)enc[1].V[2],
+				(int)enc[1].A[0], (int)enc[1].A[1]);
+		fflush(stdout);
 		encode(enc[0].lastC[0] - enc[0].C[0], enc[0].lastC[1] - enc[0].C[1]);
 	}
 	else if (enc_init[0][0] && enc_init[0][1] && enc_init[0][2] && enc_init[1][0] && enc_init[1][1] && enc_init[1][2])
 	{
+		printf("L=%f, R=%f, mc[0]{ C=%d:%d, V=%d:%d:%d, A=%d:%d }  mc[1]{ C=%d:%d, V=%d:%d:%d, A=%d:%d } \r", _left, _right,
+				(int)(enc[0].C[0]), (int)(enc[0].C[1]),
+				(int)enc[0].V[0], (int)enc[0].V[1], (int)enc[0].V[2],
+				(int)enc[0].A[0], (int)enc[0].A[1],
+				(int)(enc[1].C[0]), (int)(enc[1].C[1]),
+				(int)enc[1].V[0], (int)enc[1].V[1], (int)enc[1].V[2],
+				(int)enc[1].A[0], (int)enc[1].A[1]);
+		fflush(stdout);
 		if (_1_is_left_2_is_right)
 			encode((enc[0].lastC[0] - enc[0].C[0]+enc[0].lastC[1] - enc[0].C[1])/2, (enc[1].lastC[0] - enc[1].C[0]+enc[1].lastC[1] - enc[1].C[1])/2);
 		else
@@ -315,7 +335,7 @@ void init(MDC2250 *m)
 {
 	// Setup telemetry
 	size_t period = 25;
-	try{
+	//try{
 		for(int i=0;i<3;i++)
 			enc_init[(m==mc[0]?0:1)][i]=false;
 		enc[m==mc[0]?0:1].C[0]=0;
@@ -325,13 +345,17 @@ void init(MDC2250 *m)
 		enc[m==mc[0]?0:1].V[2]=0;
 		enc[m==mc[0]?0:1].A[0]=0;
 		enc[m==mc[0]?0:1].A[1]=0;
-		m->setTelemetry("C,V,C,A", period, m == mc[0] ? telemetry_callback1 : telemetry_callback2);
-		m->setTelemetry("C,V,C,A", period, m == mc[0] ? telemetry_callback1 : telemetry_callback2);
-	}
-	catch(std::exception &e)
-	{
-		ROS_ERROR("%s", e.what());
-	}
+		for(int i=1;i<=2;i++)
+		{
+			m->setEncoderPulsesPerRotation(i, ENCODER_CPR*4);
+			m->setEncoderUsage(i, mdc2250::constants::feedback, i==1, i==2);
+			m->setMaxRPMValue(i, ENCODER_RPM_AT_1000_EFFORT);
+			m->setOperatingMode(i, mdc2250::constants::closedloop_speed);
+		}
+		m->setTelemetry("C,V,A", period, m == mc[0] ? telemetry_callback1 : telemetry_callback2);
+		lasttick[m==mc[0]?0:1] = ros::Time::now();
+	/*}
+	catch(std::exception &e) { 	ROS_ERROR("%s", e.what()); 	}*/
 }
 
 void raw_callback(int i, const mdc2250::MotorRaw::ConstPtr& msg) {
@@ -414,48 +438,43 @@ int main(int argc, char **argv) {
     ros::ServiceServer estopper = n.advertiseService("estop", estop_callback);
 
     while(ros::ok()) {
+		erroroccurred = false;
     	for (int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++){
 			ROS_INFO("MDC2250[%d] connecting to port %s", i, port[i].c_str());
 			try {
 				mc[i] = new MDC2250();
 
-	            mc[i]->setExceptionHandler(errorMsgCallback);
-	            mc[i]->setInfoHandler(infoMsgCallback);
+	            mc[i]->setExceptionHandler(i==0 ? errorMsgCallback1 : errorMsgCallback2);
+	            mc[i]->setInfoHandler(i==0 ? infoMsgCallback1 : infoMsgCallback2);
 
 	            //                      10000, true
 				mc[i]->connect(port[i], 100, false);
 
 				init(mc[i]);
 			} catch(ConnectionFailedException &e) {
-				ROS_ERROR("Failed to connect to the MDC2250: %s", e.what());
-				if (mc[i]->isConnected())
-					try{ mc[i]->disconnect(); ROS_INFO("Disconnected from mc[%d]", i); }
-					catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from mc[%d]: %s", i, e.what()); }
-				for(int j=i-1;j>=0;j++)
-					try{ mc[j]->disconnect(); ROS_INFO("Disconnected from little brother mc[%d]", j); }
-					catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from little brother mc[%d]: %s", j, e.what()); }
+				ROS_ERROR("Failed to connect to the MDC2250[%d]: %s", i, e.what());
+				erroroccurred = true;
 			} catch(std::exception &e) {
-				ROS_ERROR("SOME exception occured while connecting to the MDC2250: %s", e.what());
-		    	try{ mc[i]->disconnect(); ROS_INFO("Disconnected from mc[%d]", i); }
-		    	catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from mc[%d]: %s", i, e.what()); }
-			    for(int j=i-1;j>=0;j++)
-			    	try{ mc[j]->disconnect(); ROS_INFO("Disconnected from little brother mc[%d]", j); }
-			    	catch(std::exception &ex) { ROS_ERROR("Failed to disconnect from little brother mc[%d]: %s", j, e.what()); }
+				ROS_ERROR("SOME exception occured while connecting to the MDC2250[%d]: %s", i, e.what());
+				erroroccurred = true;
 			}
     	}
-        while(isConnected() && ros::ok()) {
+        while(!erroroccurred && isConnected() && ros::ok()) {
             ros::spinOnce();
             ros::Duration(0.001).sleep();
         }
         for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
         {
-            if (mc[i]->isConnected())
-                mc[i]->disconnect();
-			free(mc[i]);
-			mc[i] = NULL;
+            if (mc[i] != NULL && mc[i]->isConnected())
+            {
+				mc[i]->disconnect();
+                mc[i] = NULL;
+            }
         }
-        if(!ros::ok())        
+        if(!ros::ok())
+        {
             break;
+        }
         ROS_INFO("Will try to reconnect to the MCD2250 in 5 seconds.");
         ros::Duration(5).sleep();
     }

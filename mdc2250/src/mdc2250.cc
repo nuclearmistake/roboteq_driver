@@ -523,3 +523,157 @@ void MDC2250::detect_emergency_stop_() {
     this->info("Estop is disabled.");
   }
 }
+
+
+void MDC2250::setOperatingMode (int  channel, constants::COMMAND_MODE cm)
+{
+	std::stringstream sinfo;
+	sinfo << "mot[" << channel << "].encoderMode := " << ((int)cm);
+	this->info(sinfo.str());
+	// Validate the parameters
+	if (channel != 1 && channel != 2) {
+		// Invalid motor index, must be 1 or 2
+		std::stringstream ss;
+		ss << "In setOperatingMode, channel must be 1 or 2, given: ";
+		ss << channel;
+		throw(std::invalid_argument(ss.str()));
+	}
+
+	// Build the command
+	std::stringstream ss;
+	ss << "^MMOD " << channel << " " << ((int)cm);
+	// Issue the command
+	std::string fail_why;
+	if (!this->issueCommand(ss.str(), fail_why)) {
+		// Something went wrong
+		throw(CommandFailedException("setOperatingMode", fail_why));
+	}
+
+	BufferedFilterPtr filt =
+	this->listener_.createBufferedFilter(SerialListener::startsWith("MMOD="));
+	std::stringstream sq;
+	sq << "~MMOD " << channel << "\r";
+	this->serial_port_.write(sq.str());
+	std::string res = filt->wait(cmd_time);
+	std::stringstream sr;
+	sr << "Command mode is " << res;
+	this->info(sr.str());
+}
+
+void MDC2250::setMaxRPMValue(int channel, int rpmThatCorrespondsTo1000Effort)
+{
+	std::stringstream sinfo;
+	sinfo << "mot[" << channel << "].maxRPM := " << rpmThatCorrespondsTo1000Effort;
+	this->info(sinfo.str());
+	// Validate the parameters
+	if (channel != 1 && channel != 2) {
+		// Invalid motor index, must be 1 or 2
+		std::stringstream ss;
+		ss << "In setMaxRPMValue, channel must be 1 or 2, given: ";
+		ss << channel;
+		throw(std::invalid_argument(ss.str()));
+	}
+	if (rpmThatCorrespondsTo1000Effort < 1 || rpmThatCorrespondsTo1000Effort > 65000)
+	{
+		//TOO MUCH MUSTARD!
+		std::stringstream ss;
+		ss << "In setMaxRPMValue, RPM that corresponds to 1000effort must be between 1 and 65000, given: ";
+		ss << rpmThatCorrespondsTo1000Effort;
+		throw(std::invalid_argument(ss.str()));
+	}
+
+	// Build the command
+	std::stringstream ss;
+	ss << "^MXRPM " << channel << " " << rpmThatCorrespondsTo1000Effort;
+	// Issue the command
+	std::string fail_why;
+	if (!this->issueCommand(ss.str(), fail_why)) {
+		// Something went wrong
+		throw(CommandFailedException("setMaxRPMValue", fail_why));
+	}
+	BufferedFilterPtr filt =
+	this->listener_.createBufferedFilter(SerialListener::startsWith("MXRPM="));
+	std::stringstream sq;
+	sq << "~MXRPM " << channel << "\r";
+	this->serial_port_.write(sq.str());
+	std::string res = filt->wait(cmd_time);
+	std::stringstream sr;
+	sr << "RPM at 1000 effort is " << res;
+	this->info(sr.str());
+}
+
+void MDC2250::setEncoderPulsesPerRotation(int channel, int pulses)
+{
+	std::stringstream sinfo;
+	sinfo << "mot[" << channel << "].encoderPPR := " << pulses;
+	this->info(sinfo.str());
+	// Validate the parameters
+	if (channel != 1 && channel != 2) {
+		// Invalid motor index, must be 1 or 2
+		std::stringstream ss;
+		ss << "In setEncoderPulsesPerRotation, channel must be 1 or 2, given: ";
+		ss << channel;
+		throw(std::invalid_argument(ss.str()));
+	}
+	if (pulses < 1 || pulses > 5000)
+	{
+		//TOO MUCH MUSTARD!
+		std::stringstream ss;
+		ss << "In setEncoderPulsesPerRotation, pulses per rotation must be between 1 and 5000, given: ";
+		ss << pulses;
+		throw(std::invalid_argument(ss.str()));
+	}
+
+	// Build the command
+	std::stringstream ss;
+	ss << "^EPPR " << channel << " " << pulses;
+	// Issue the command
+	std::string fail_why;
+	if (!this->issueCommand(ss.str(), fail_why)) {
+		// Something went wrong
+		throw(CommandFailedException("setEncoderPulsesPerRotation", fail_why));
+	}
+	BufferedFilterPtr filt =
+	this->listener_.createBufferedFilter(SerialListener::startsWith("EPPR="));
+	std::stringstream sq;
+	sq << "~EPPR " << channel << "\r";
+	this->serial_port_.write(sq.str());
+	std::string res = filt->wait(cmd_time);
+	std::stringstream sr;
+	sr << "Pulses per rotation (CPR x 4) is " << res;
+	this->info(sr.str());
+}
+
+void MDC2250::setEncoderUsage(int channel, constants::ENCODER_USAGE eu, bool mot1, bool mot2)
+{
+	std::stringstream sinfo;
+	sinfo << "mot[" << channel << "].encoderUsage := " << eu << "  m1=" << mot1 << " m2=" << mot2;
+	this->info(sinfo.str());
+	// Validate the parameters
+	if (channel != 1 && channel != 2) {
+		// Invalid motor index, must be 1 or 2
+		std::stringstream ss;
+		ss << "In setEncoderPulsesPerRotation, channel must be 1 or 2, given: ";
+		ss << channel;
+		throw(std::invalid_argument(ss.str()));
+	}
+
+	// Build the command
+	std::stringstream ss;
+	ss << "^EMOD " << channel << " " << (((int)eu) + ((mot1?1:0) * 16 + (mot2?1:0)*32));
+	// Issue the command
+	std::string fail_why;
+	if (!this->issueCommand(ss.str(), fail_why)) {
+		// Something went wrong
+		throw(CommandFailedException("setEncoderPulsesPerRotation", fail_why));
+	}
+	BufferedFilterPtr filt =
+	this->listener_.createBufferedFilter(SerialListener::startsWith("EMOD="));
+	std::stringstream sq;
+	sq << "~EMOD " << channel << "\r";
+	this->serial_port_.write(sq.str());
+	std::string res = filt->wait(cmd_time);
+	std::stringstream sr;
+	sr << "Encoder mode is " << res;
+	this->info(sr.str());
+}

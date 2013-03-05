@@ -54,6 +54,24 @@
 
 namespace mdc2250 {
 
+namespace constants {
+
+typedef enum
+{
+	openloop=1,
+	closedloop_speed=2,
+	closedloop_position=3
+} COMMAND_MODE;
+
+typedef enum
+{
+	unused=0,
+	feedback=1,
+	command=2
+} ENCODER_USAGE;
+
+}
+
 /*!
  * This function type describes the prototype for the logging callbacks.
  * 
@@ -360,6 +378,14 @@ public:
     // Reset the listener's exception handler
     this->listener_.setExceptionHandler(this->handle_exc);
   }
+
+  void setOperatingMode (int  channel, constants::COMMAND_MODE cm);
+
+  void setMaxRPMValue(int channel, int rpmThatCorrespondsTo1000Effort);
+
+  void setEncoderPulsesPerRotation(int channel, int pulses);
+
+  void setEncoderUsage(int channel, constants::ENCODER_USAGE eu, bool mot1, bool mot2);
 
 private:
   // Implementation of _issueCommand, used by issueQuery too
