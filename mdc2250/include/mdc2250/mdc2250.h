@@ -387,6 +387,8 @@ public:
 
   void setEncoderUsage(int channel, constants::ENCODER_USAGE eu, bool mot1, bool mot2);
 
+  void commitConfig();
+
 private:
   // Implementation of _issueCommand, used by issueQuery too
   bool _issueCommand(const std::string &command, std::string &failure_reason,

@@ -63,7 +63,7 @@ MDC2250::MDC2250(bool debug_mode) : listener_(1) {
   // Set default callbacks
   this->handle_exc = defaultExceptionCallback;
   this->info = defaultInfoCallback;
-  cmd_time = 200; // Default to 15 ms
+  cmd_time = 250; // Default to 15 ms
   this->debug_mode_ = debug_mode;
   if (this->debug_mode_) {
     this->listener_.setDefaultHandler(unparsedMessages);
@@ -495,7 +495,7 @@ void MDC2250::detect_echo_() {
   std::string echo_setting_res = echo_setting_filt->wait(cmd_time);
   if (echo_setting_res.empty()) {
     // Something went wrong
-    throw(CommandFailedException("detect_echo_", "No echo state response."));
+    //throw(CommandFailedException("detect_echo_", "No echo state response."));
   }
   if (echo_setting_res.find('0') != std::string::npos) {
     this->echo_ = true;
@@ -513,7 +513,7 @@ void MDC2250::detect_emergency_stop_() {
   std::string estop_res = estop_filt->wait(cmd_time);
   if (estop_res.empty()) {
     // Something went wrong
-    throw(CommandFailedException("detect_echo_", "No echo state response."));
+    //throw(CommandFailedException("detect_echo_", "No echo state response."));
   }
   if (estop_res.find("16") != std::string::npos) {
     this->estop_ = true;
@@ -676,4 +676,14 @@ void MDC2250::setEncoderUsage(int channel, constants::ENCODER_USAGE eu, bool mot
 	std::stringstream sr;
 	sr << "Encoder mode is " << res;
 	this->info(sr.str());
+}
+
+void MDC2250::commitConfig()
+{
+	std::string fail_why;
+	if (!this->issueCommand("%EESAV", fail_why)) {
+		// Something went wrong
+		throw(CommandFailedException("SAVE TO EEPROM", fail_why));
+	}
+	this->info("Saving parameters to EEPROM");
 }
