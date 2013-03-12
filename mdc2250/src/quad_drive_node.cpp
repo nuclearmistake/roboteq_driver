@@ -37,6 +37,7 @@ bool configonly;
 bool configured[2];
 ros::Time lasttick[2];
 bool erroroccurred;
+bool spam;
 
 int NUM_VALID_CONTROLLER_PORTS=2;
 ros::Publisher odom_pub;
@@ -163,7 +164,7 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     if(B_eff < -1*B_MAX)
     	B_eff = -1*B_MAX;
 
-    ROS_INFO("Arpm: %f, Aeff: %f, Brpm: %f, Beff: %f", A_rpm, -A_eff, B_rpm, B_eff);
+    //ROS_INFO("Arpm: %f, Aeff: %f, Brpm: %f, Beff: %f", A_rpm, -A_eff, B_rpm, B_eff);
 
     quad_move(-A_eff, B_eff);
 }
@@ -296,13 +297,16 @@ void telemetry_callback(int i, const std::string &telemetry) {
 	}
 	if (NUM_VALID_CONTROLLER_PORTS==1 && enc_init[0][0] && enc_init[0][1] && enc_init[0][2])
 	{
-		std::stringstream ss;
-		for(ENCODER::iterator i=enc[0].begin();i!=enc[0].end();i++)
+		if (spam)
 		{
-			ss << i->first << "=" << i->second << " ";
+			std::stringstream ss;
+			for(ENCODER::iterator i=enc[0].begin();i!=enc[0].end();i++)
+			{
+				ss << i->first << "=" << i->second << " ";
+			}
+			printf("L=%f, R=%f, mc[0]{ %s } \r", _left, _right,	ss.str().c_str());
+			fflush(stdout);
 		}
-		printf("L=%f, R=%f, mc[0]{ %s } \r", _left, _right,	ss.str().c_str());
-		fflush(stdout);
 		if (TandVal[0][0]=='C')
 		{
 			std::vector<std::string> vc0 = split(enc[0]["C"], ':');
@@ -313,19 +317,21 @@ void telemetry_callback(int i, const std::string &telemetry) {
 	}
 	else if (enc_init[0][0] && enc_init[0][1] && enc_init[0][2] && enc_init[1][0] && enc_init[1][1] && enc_init[1][2])
 	{
-
-		std::stringstream ss0;
-		for(ENCODER::iterator it=enc[0].begin();it!=enc[0].end();it++)
+		if (spam)
 		{
-			ss0 << it->first << "=" << it->second << " ";
+			std::stringstream ss0;
+			for(ENCODER::iterator it=enc[0].begin();it!=enc[0].end();it++)
+			{
+				ss0 << it->first << "=" << it->second << " ";
+			}
+			std::stringstream ss1;
+			for(ENCODER::iterator it=enc[1].begin();it!=enc[1].end();it++)
+			{
+				ss1 << it->first << "=" << it->second << " ";
+			}
+			printf("L=%f, R=%f, mc[0]{ %s } mc[1]{ %s }\r", _left, _right,	ss0.str().c_str(), ss1.str().c_str());
+			fflush(stdout);
 		}
-		std::stringstream ss1;
-		for(ENCODER::iterator it=enc[1].begin();it!=enc[1].end();it++)
-		{
-			ss1 << it->first << "=" << it->second << " ";
-		}
-		printf("L=%f, R=%f, mc[0]{ %s } mc[1]{ %s }\r", _left, _right,	ss0.str().c_str(), ss1.str().c_str());
-		fflush(stdout);
 		if (TandVal[0][0]=='C')
 		{
 			std::vector<std::string> vc = split(enc[i]["C"], ':');
@@ -339,7 +345,7 @@ void telemetry_callback(int i, const std::string &telemetry) {
 					std::vector<std::string> vv = split(enc[i]["V"], ':');
 					if (vv.size() > 0)
 					{
-						vf = (float)(atoi(vv[0].c_str()));
+						vf = (float)(atoi(vv[0].c_str()))/10.0;
 						static std_msgs::Float32 v;
 						v.data = vf;
 						voltpub.publish(v);
@@ -449,6 +455,8 @@ int main(int argc, char **argv) {
     priv.param("rotation_covariance",rot_cov, 1.0);
     priv.param("position_covariance",pos_cov, 1.0);
 
+    priv.param("spam",spam, false);
+
     // Odometry Publisher
 	odom_pub = n.advertise<nav_msgs::Odometry>("odom", 5);
 
@@ -458,7 +466,7 @@ int main(int argc, char **argv) {
 	// TF Broadcaster
 	odom_broadcaster = new tf::TransformBroadcaster;
 
-	estoppub = n.advertise<std_msgs::Bool>("estopState", 1);
+	estoppub = n.advertise<std_msgs::Bool>("estopState", 1, true);
 
 	voltpub = n.advertise<std_msgs::Float32>("Voltage", 1);
 
@@ -502,7 +510,11 @@ int main(int argc, char **argv) {
 					configured[i] = true;
 				}
 				if (!configonly)
+				{
 					init(mc[i]);
+
+					SetEStop(mc[0]->isEstopped() || (i>0 && mc[1]->isEstopped()));
+				}
 			} catch(ConnectionFailedException &e) {
 				ROS_ERROR("Failed to connect to the MDC2250[%d]: %s", i, e.what());
 				erroroccurred = true;
