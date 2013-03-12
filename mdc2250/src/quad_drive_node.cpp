@@ -5,6 +5,8 @@
  *      Author: mccanne
  */
 #include "ros/ros.h"
+#include "std_msgs/Bool.h"
+#include "std_msgs/Float32.h"
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Odometry.h"
 #include <mdc2250/StampedEncoders.h>
@@ -39,6 +41,8 @@ bool erroroccurred;
 int NUM_VALID_CONTROLLER_PORTS=2;
 ros::Publisher odom_pub;
 ros::Publisher encoder_pub;
+ros::Publisher estoppub;
+ros::Publisher voltpub;
 tf::TransformBroadcaster *odom_broadcaster;
 
 double wheel_circumference = 0.0;
@@ -329,6 +333,18 @@ void telemetry_callback(int i, const std::string &telemetry) {
 			newc[i][1] = atoi(vc[1].c_str());
 			if (i==0)
 			{
+				if (enc[i].count("V")>0)
+				{
+					static float vf;
+					std::vector<std::string> vv = split(enc[i]["V"], ':');
+					if (vv.size() > 0)
+					{
+						vf = (float)(atoi(vv[0].c_str()));
+						static std_msgs::Float32 v;
+						v.data = vf;
+						voltpub.publish(v);
+					}
+				}
 				encode((lastC[0][0] - newc[0][0]+lastC[1][0] - newc[1][0])/2, (lastC[1][1] - newc[0][1]+lastC[1][1] - newc[1][1])/2);
 				lastC[0][0] = newc[0][0];
 				lastC[0][1] = newc[0][1];
@@ -383,6 +399,14 @@ void SetEStop(bool status)
 			init(mc[i]);
 		}
 	}
+	static std_msgs::Bool b;
+	b.data=status;
+	estoppub.publish(b);
+}
+
+void estopsub_callback(const std_msgs::Bool::ConstPtr& msg)
+{
+	SetEStop(msg->data);
 }
 
 bool estop_callback(mdc2250::estop::Request  &req,
@@ -434,6 +458,10 @@ int main(int argc, char **argv) {
 	// TF Broadcaster
 	odom_broadcaster = new tf::TransformBroadcaster;
 
+	estoppub = n.advertise<std_msgs::Bool>("estopState", 1);
+
+	voltpub = n.advertise<std_msgs::Float32>("Voltage", 1);
+
 	// cmd_vel Subscriber
 	ros::Subscriber sub = n.subscribe("cmd_vel", 1, cmd_velCallback);
 
@@ -443,6 +471,8 @@ int main(int argc, char **argv) {
 	ros::Subscriber rawsub2 = n.subscribe("mc2/raw", 1, raw_callback2);
 
 	ros::ServiceServer estopper = n.advertiseService("estop", estop_callback);
+
+	ros::Subscriber estopsub = n.subscribe("setEstop", 1, estopsub_callback);
 
     while(ros::ok()) {
 		erroroccurred = false;
