@@ -428,7 +428,7 @@ int main(int argc, char **argv) {
     priv.param("serial_port1", port[0], std::string("/dev/motor_controller1"));
     priv.param("serial_port2", port[1], std::string(""));
 
-    priv.param("config_only", configonly, false);
+    //priv.param("config_only", configonly, false);
 
     //if no 2nd port is specified, assume it's intentional for testing
     if (port[1].size()==0)
