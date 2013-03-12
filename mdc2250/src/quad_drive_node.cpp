@@ -50,6 +50,7 @@ double rot_cov = 0.0;
 double pos_cov = 0.0;
 
 unsigned long int lastC[2][2];
+unsigned long int newc[2][2];
 
 static double A_MAX = 1000.0;
 static double B_MAX = 1000.0;
@@ -283,7 +284,6 @@ void telemetry_callback(int i, const std::string &telemetry) {
 	enc[i][TandVal[0]] = TandVal[1];
 	char T = TandVal[0][0];
 	std::vector<std::string> vals = split(TandVal[1], ':');
-	int s = vals.size();
 	switch(T)
 	{
 		case 'C': enc_init[i][0] = true; break;
@@ -311,24 +311,30 @@ void telemetry_callback(int i, const std::string &telemetry) {
 	{
 
 		std::stringstream ss0;
-		for(ENCODER::iterator i=enc[0].begin();i!=enc[0].end();i++)
+		for(ENCODER::iterator it=enc[0].begin();it!=enc[0].end();it++)
 		{
-			ss0 << i->first << "=" << i->second << " ";
+			ss0 << it->first << "=" << it->second << " ";
 		}
 		std::stringstream ss1;
-		for(ENCODER::iterator i=enc[1].begin();i!=enc[1].end();i++)
+		for(ENCODER::iterator it=enc[1].begin();it!=enc[1].end();it++)
 		{
-			ss1 << i->first << "=" << i->second << " ";
+			ss1 << it->first << "=" << it->second << " ";
 		}
 		printf("L=%f, R=%f, mc[0]{ %s } mc[1]{ %s }\r", _left, _right,	ss0.str().c_str(), ss1.str().c_str());
 		fflush(stdout);
 		if (TandVal[0][0]=='C')
 		{
-			std::vector<std::string> vc0 = split(enc[0]["C"], ':');
-			std::vector<std::string> vc1 = split(enc[1]["C"], ':');
-			encode((lastC[0][0] - atoi(vc0[0].c_str())+lastC[1][0] - atoi(vc1[0].c_str()))/2, (lastC[1][1] - atoi(vc0[1].c_str())+lastC[1][1] - atoi(vc1[1].c_str()))/2);
-			lastC[0][0] = atoi(enc[0]["C"].c_str());
-			lastC[0][1] = atoi(enc[0]["C"].c_str());
+			std::vector<std::string> vc = split(enc[i]["C"], ':');
+			newc[i][0] = atoi(vc[0].c_str());
+			newc[i][1] = atoi(vc[1].c_str());
+			if (i==0)
+			{
+				encode((lastC[0][0] - newc[0][0]+lastC[1][0] - newc[1][0])/2, (lastC[1][1] - newc[0][1]+lastC[1][1] - newc[1][1])/2);
+				lastC[0][0] = newc[0][0];
+				lastC[0][1] = newc[0][1];
+				lastC[0][0] = newc[0][0];
+				lastC[0][1] = newc[0][1];
+			}
 		}
 	}
 }
