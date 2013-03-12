@@ -80,7 +80,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
-bool isConnected() { ros::Time n = ros::Time::now(); for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++) {ros::Duration d = n - lasttick[i]; if (d.toSec() > 0.25 || mc[i] == NULL || !mc[i]->isConnected()) return false; } return true; }
+bool isConnected() { for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++) { if(mc[i] == NULL || !mc[i]->isConnected()) return false; } return true; }
 
 double _left, _right;
 
@@ -512,8 +512,6 @@ int main(int argc, char **argv) {
 				if (!configonly)
 				{
 					init(mc[i]);
-
-					SetEStop(mc[0]->isEstopped() || (i>0 && mc[1]->isEstopped()));
 				}
 			} catch(ConnectionFailedException &e) {
 				ROS_ERROR("Failed to connect to the MDC2250[%d]: %s", i, e.what());
@@ -523,10 +521,41 @@ int main(int argc, char **argv) {
 				erroroccurred = true;
 			}
     	}
-        while(!configonly && !erroroccurred && isConnected() && ros::ok()) {
+    	if (!erroroccurred && isConnected())
+    	{
+			bool estopped = false;
+			for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
+				estopped |= mc[i]->isEstopped();
+			std_msgs::Bool b;
+			b.data = estopped;
+			estoppub.publish(b);
+			for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
+				lasttick[i]=ros::Time::now();
+			erroroccurred = false;
+    	}
+    	bool conly = configonly;
+    	bool err = erroroccurred;
+    	bool conn = isConnected();
+    	bool ok = ros::ok();
+        while(!conly && !err && conn && ok) {
             ros::spinOnce();
             ros::Duration(0.01).sleep();
+            static ros::Time n = ros::Time::now();
+            for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
+            	{
+            		static ros::Duration d = n - lasttick[i];
+            		if (d.toSec() > 0.5)
+            		{
+            			ROS_WARN("TIMED OUT!");
+            			break;
+            		}
+            	}
+        	conly = configonly;
+        	err = erroroccurred;
+        	conn = isConnected();
+        	ok = ros::ok();
         }
+        ROS_WARN("FAILURE REASON: configonly=%s errored=%s !connected=%s !ok=%s",configonly?"true":"false",erroroccurred?"true":"false",!conn?"true":"false",!ok?"true":"false");
         for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
         {
             if (mc[i] != NULL && mc[i]->isConnected())
