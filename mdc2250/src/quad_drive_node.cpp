@@ -12,6 +12,7 @@
 #include <mdc2250/StampedEncoders.h>
 #include <mdc2250/MotorRaw.h>
 #include <mdc2250/estop.h>
+#include <mdc2250/setspeed.h>
 #include "tf/tf.h"
 #include "tf/transform_broadcaster.h"
 
@@ -22,7 +23,7 @@
 #include <mdc2250/mdc2250.h>
 
 #define ENCODER_CPR 360                //  360 clicks / rotation encoders
-#define ENCODER_RPM_AT_1000_EFFORT 120 //  ~2 m/s
+unsigned int ENCODER_RPM_AT_1000_EFFORT = 120; //  ~2 m/s
 
 using namespace mdc2250;
 
@@ -427,6 +428,20 @@ bool estop_callback(mdc2250::estop::Request  &req,
 	return true;
 }
 
+
+bool maxspeed_callback(mdc2250::setspeed::Request  &req,
+					mdc2250::setspeed::Response &res)
+{
+	float mps = req.maxspeed;
+	float rpm = 60.0 * mps / wheel_circumference;
+	ROS_INFO("Setting max speed to %f m/s -- %f rpm",mps,rpm);
+	ENCODER_RPM_AT_1000_EFFORT = rpm;
+	for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
+		for(int j=1;j<=2;j++)
+			mc[i]->setMaxRPMValue(j, ENCODER_RPM_AT_1000_EFFORT);
+	return true;
+}
+
 int main(int argc, char **argv) {
     // Node setup
     ros::init(argc, argv, "quad_node");
@@ -485,6 +500,8 @@ int main(int argc, char **argv) {
 
 	ros::ServiceServer estopper = n.advertiseService("estop", estop_callback);
 
+	ros::ServiceServer sped = n.advertiseService("maxspeed", maxspeed_callback);
+
 	ros::Subscriber estopsub = n.subscribe("setEstop", 1, estopsub_callback);
 
     while(ros::ok()) {
@@ -500,14 +517,14 @@ int main(int argc, char **argv) {
 	            mc[i]->setInfoHandler(i==0 ? infoMsgCallback1 : infoMsgCallback2);
 
 	            //                      10000, true
-				mc[i]->connect(port[i], 100, false);
+				mc[i]->connect(port[i], 500, false);
 	            if (configonly)
 					for(int j=1;j<=2;j++)
 					{
 						mc[i]->setEncoderPulsesPerRotation(j, ENCODER_CPR*4);
-						mc[i]->setEncoderUsage(j, mdc2250::constants::unused, j==1, j==2); //feedback
-						mc[i]->setMaxRPMValue(j, 3000);//ENCODER_RPM_AT_1000_EFFORT);
-						mc[i]->setOperatingMode(j, mdc2250::constants::openloop); //closedloop_speed
+						mc[i]->setEncoderUsage(j, mdc2250::constants::feedback, j==1, j==2);
+						mc[i]->setMaxRPMValue(j, ENCODER_RPM_AT_1000_EFFORT);
+						mc[i]->setOperatingMode(j, mdc2250::constants::closedloop_speed);
 					}
 				if (configonly && !erroroccurred)
 				{
