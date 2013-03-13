@@ -39,6 +39,7 @@ bool configured[2];
 ros::Time lasttick[2];
 bool erroroccurred;
 bool spam;
+float speed_coefficient = 1.0;
 
 int NUM_VALID_CONTROLLER_PORTS=2;
 ros::Publisher odom_pub;
@@ -145,8 +146,8 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
 
     // Convert mps to rpm
-    double A = msg->linear.x - msg->angular.z * (robot_width/2.0);
-    double B = msg->linear.x + msg->angular.z * (robot_width/2.0);
+    double A = msg->linear.x * speed_coefficient - msg->angular.z * (robot_width/2.0);
+    double B = msg->linear.x * speed_coefficient + msg->angular.z * (robot_width/2.0);
 
     double A_rpm = A * (60.0 / (M_PI*wheel_diameter));
     double B_rpm = B * (60.0 / (M_PI*wheel_diameter));
@@ -442,6 +443,15 @@ bool maxspeed_callback(mdc2250::setspeed::Request  &req,
 	return true;
 }
 
+bool speedcoefficient(mdc2250::setspeed::Request  &req,
+					mdc2250::setspeed::Response &res)
+{
+	ROS_WARN("DANGER WILL ROBINSON! Setting this to 3 turns a 1 m/s command into a 3 m/s command. use care with this!");
+	speed_coefficient = req.maxspeed;
+	ROS_INFO("Set coefficient to %f",speed_coefficient);
+	return true;
+}
+
 int main(int argc, char **argv) {
     // Node setup
     ros::init(argc, argv, "quad_node");
@@ -501,6 +511,8 @@ int main(int argc, char **argv) {
 	ros::ServiceServer estopper = n.advertiseService("estop", estop_callback);
 
 	ros::ServiceServer sped = n.advertiseService("maxspeed", maxspeed_callback);
+
+	ros::ServiceServer spedd = n.advertiseService("speedcoefficient", speedcoefficient);
 
 	ros::Subscriber estopsub = n.subscribe("setEstop", 1, estopsub_callback);
 
