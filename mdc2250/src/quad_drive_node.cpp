@@ -54,7 +54,7 @@ std::string odom_frame_id;
 double rot_cov = 0.0;
 double pos_cov = 0.0;
 
-unsigned long int lastC[2][2];
+unsigned long int lastC[2];
 unsigned long int newc[2][2];
 
 static double A_MAX = 1000.0;
@@ -189,10 +189,17 @@ void infoMsgCallback2(const std::string &ex) {
 	infoMsgCallback(2, ex);
 }
 
+long long int total_left;
+long long int total_right;
 void encode(int left, int right) {
     // Make sure we are connected
     if(!ros::ok() || !isConnected())
         return;
+
+    lastC[0] = lastC[0] + left;
+    lastC[1] = lastC[1] + right;
+    left = lastC[0];
+    right = lastC[1];
 
     ros::Time now = ros::Time::now();
 
@@ -200,52 +207,51 @@ void encode(int left, int right) {
     prev_time = now;
 
     // Convert to mps for each wheel from delta encoder ticks
-    double left_v = left * 2*M_PI / ENCODER_CPR;
-    left_v /= delta_time;
-    // left_v *= encoder_poll_rate;
-    double right_v = right * 2*M_PI / ENCODER_CPR;
-    right_v /= delta_time;
-    // right_v *= encoder_poll_rate;
+    double left_r = left / ENCODER_CPR;
+    double right_r = right / ENCODER_CPR;
+
+    double left_d = left_r / wheel_circumference;
+	double right_d = right_r / wheel_circumference;
 
     StampedEncoders encoder_msg;
 
     encoder_msg.header.stamp = now;
     encoder_msg.header.frame_id = "base_link";
-    encoder_msg.encoders.left_wheel = left_v;
-    encoder_msg.encoders.right_wheel = right_v;
+    encoder_msg.encoders.left_wheel = left;
+    encoder_msg.encoders.right_wheel = right;
 
     encoder_pub.publish(encoder_msg);
 
-    double v = 0.0;
-    double w = 0.0;
+    double v = (left_d+right_d)/2.0;
+    double w = (right_d - left_d) / robot_width; //approximate rotation
 
-    double r_L = wheel_diameter/2.0;
-    double r_R = wheel_diameter/2.0;
+    double dv = v / delta_time;
+    double dw = w / delta_time;
 
-    v += r_L/2.0 * left_v;
-    v += r_R/2.0 * right_v;
-
-    w += r_R/robot_width * right_v;
-    w -= r_L/robot_width * left_v;
-
-
-    // Update the states based on model and input
-    prev_x += delta_time * v
-                          * cos(prev_w + delta_time * (w/2.0));
-
-    prev_y += delta_time * v
-                          * sin(prev_w + delta_time * (w/2.0));
-    prev_w += delta_time * w;
-    prev_w = wrapToPi(prev_w);
+    double x,y;
+    if (v != 0)
+    {
+		// calculate distance traveled in x and y
+		x = cos( w ) * v;
+		y = -sin( w ) * v;
+		// calculate the final position of the robot
+		prev_x += ( cos( prev_w ) * x - sin( prev_w ) * y );
+		prev_y += ( sin( prev_w ) * x + cos( prev_w ) * y );
+    }
+	if( w != 0)
+		prev_w += w;
 
     // ROS_INFO("%f", prev_w);
 
-    geometry_msgs::Quaternion quat = tf::createQuaternionMsgFromYaw(prev_w);
+    geometry_msgs::Quaternion quat;
+    quat.x=quat.y=0;
+    quat.z=quat.w = w/2;
 
     // Populate the msg
     nav_msgs::Odometry odom_msg;
     odom_msg.header.stamp = now;
     odom_msg.header.frame_id = odom_frame_id;
+    odom_msg.child_frame_id = "/base_link";
     odom_msg.pose.pose.position.x = prev_x;
     odom_msg.pose.pose.position.y = prev_y;
     odom_msg.pose.pose.orientation = quat;
@@ -255,11 +261,14 @@ void encode(int left, int right) {
     odom_msg.pose.covariance[21] = 1e100;
     odom_msg.pose.covariance[28] = 1e100;
     odom_msg.pose.covariance[35] = rot_cov;
-
-    // odom_msg.twist.twist.linear.x = v/delta_time;
-    odom_msg.twist.twist.linear.x = v;
-    // odom_msg.twist.twist.angular.z = w/delta_time;
-    odom_msg.twist.twist.angular.z = w;
+    odom_msg.twist.twist.linear.x = dv;
+    odom_msg.twist.twist.angular.z = dw;
+    odom_msg.twist.covariance[0] = pos_cov;
+    odom_msg.twist.covariance[7] = pos_cov;
+    odom_msg.twist.covariance[14] = 1e100;
+    odom_msg.twist.covariance[21] = 1e100;
+    odom_msg.twist.covariance[28] = 1e100;
+    odom_msg.twist.covariance[35] = rot_cov;
 
     odom_pub.publish(odom_msg);
 
@@ -309,10 +318,10 @@ void telemetry_callback(int i, const std::string &telemetry) {
 		}
 		if (TandVal[0][0]=='C')
 		{
-			std::vector<std::string> vc0 = split(enc[0]["C"], ':');
-			encode(lastC[0][0] - atoi(vc0[0].c_str()), lastC[0][1] - atoi(vc0[1].c_str()));
-			lastC[0][0] = atoi(enc[0]["C"].c_str());
-			lastC[0][1] = atoi(enc[0]["C"].c_str());
+			std::vector<std::string> vc = split(enc[0]["C"], ':');
+			newc[i][0] = atoi(vc[0].c_str());
+			newc[i][1] = atoi(vc[1].c_str());
+			encode(newc[0][0], newc[0][1]);
 		}
 	}
 	else if (enc_init[0][0] && enc_init[0][1] && enc_init[0][2] && enc_init[1][0] && enc_init[1][1] && enc_init[1][2])
@@ -351,11 +360,7 @@ void telemetry_callback(int i, const std::string &telemetry) {
 						voltpub.publish(v);
 					}
 				}
-				encode((lastC[0][0] - newc[0][0]+lastC[1][0] - newc[1][0])/2, (lastC[1][1] - newc[0][1]+lastC[1][1] - newc[1][1])/2);
-				lastC[0][0] = newc[0][0];
-				lastC[0][1] = newc[0][1];
-				lastC[0][0] = newc[0][0];
-				lastC[0][1] = newc[0][1];
+				encode((newc[0][0]+newc[1][0])/2.0, (newc[0][1]+newc[1][1])/2.0);
 			}
 		}
 	}
