@@ -118,14 +118,24 @@ void quad_move(double left, double right)
         return;
     }    
     if (_1_is_left_2_is_right)
-    {
+    { 
+#ifdef ROVER_1
     	mc[0]->commandMotors(left, left);
-    	mc[1]->commandMotors(right, right);
+    	mc[1]->commandMotors(-right, -right);
+#else
+    	mc[0]->commandMotors(-left, left);
+    	mc[1]->commandMotors(-right, right);
+#endif
     }
     else
     {
-    	mc[0]->commandMotors(left, right);
-    	mc[1]->commandMotors(left, right);
+#ifdef ROVER_1
+    	mc[0]->commandMotors(left, -right);
+    	mc[1]->commandMotors(left, -right);
+#else
+	mc[0]->commandMotors(left, right);
+    	mc[1]->commandMotors(-left, -right);
+#endif
     }
 }
 
@@ -168,7 +178,7 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
     //ROS_INFO("Arpm: %f, Aeff: %f, Brpm: %f, Beff: %f", A_rpm, -A_eff, B_rpm, B_eff);
 
-    quad_move(-A_eff, B_eff);
+    quad_move(A_eff, B_eff);
 }
 void errorMsgCallback(int m, const std::exception &ex) {
     ROS_ERROR("mc[%d] -- %s", m, ex.what());
