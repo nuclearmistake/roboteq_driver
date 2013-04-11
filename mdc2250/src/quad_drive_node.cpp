@@ -485,7 +485,7 @@ int main(int argc, char **argv) {
     priv.param("rotation_covariance",rot_cov, 1.0);
     priv.param("position_covariance",pos_cov, 1.0);
 
-    priv.param("spam",spam, false);
+    priv.param("spam",spam, true);
 
     // Odometry Publisher
 	odom_pub = n.advertise<nav_msgs::Odometry>("odom", 5);

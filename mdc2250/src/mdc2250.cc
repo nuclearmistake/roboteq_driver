@@ -264,7 +264,8 @@ MDC2250::setWatchdog(size_t timeout) {
   std::string fail_why;
   if (!this->issueCommand(ss.str(), fail_why)) {
     // Something went wrong
-    throw(CommandFailedException("setWatchdog", fail_why));
+    //throw(CommandFailedException("setWatchdog", fail_why));
+	
   }
 }
 
@@ -415,7 +416,7 @@ MDC2250::commandMotor(size_t motor_index, ssize_t motor_effort) {
   std::string fail_why;
   if (!this->issueCommand(ss.str(), fail_why)) {
     // Something went wrong
-    throw(CommandFailedException("commandMotor", fail_why));
+    //throw(CommandFailedException("commandMotor", fail_why));
   }
 }
 
@@ -446,7 +447,7 @@ MDC2250::commandMotors(ssize_t motor1_effort, ssize_t motor2_effort) {
   std::string fail_why;
   if (!this->issueCommand(ss.str(), fail_why)) {
     // Something went wrong
-    throw(CommandFailedException("commandMotors", fail_why));
+    //throw(CommandFailedException("commandMotors", fail_why));
   }
 }
 
@@ -546,7 +547,8 @@ void MDC2250::setOperatingMode (int  channel, constants::COMMAND_MODE cm)
 	std::string fail_why;
 	if (!this->issueCommand(ss.str(), fail_why)) {
 		// Something went wrong
-		throw(CommandFailedException("setOperatingMode", fail_why));
+		return;
+		//throw(CommandFailedException("setOperatingMode", fail_why));
 	}
 
 	BufferedFilterPtr filt =
