@@ -1,2 +1,4 @@
 SUBSYSTEM=="tty", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="8D9B25655254", SYMLINK+="motor_controller1", MODE="666"
 SUBSYSTEM=="tty", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="8D9313655254", SYMLINK+="motor_controller2", MODE="666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="8D6E22664853", SYMLINK+="motor_controller1", MODE="666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="498F36653235", SYMLINK+="motor_controller2", MODE="666"
