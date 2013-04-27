@@ -133,7 +133,7 @@ void quad_move(double left, double right)
     	mc[0]->commandMotors(left, -right);
     	mc[1]->commandMotors(left, -right);
 #else
-	mc[0]->commandMotors(left, right);
+	    mc[0]->commandMotors(left, right);
     	mc[1]->commandMotors(-left, -right);
 #endif
     }

@@ -116,6 +116,9 @@ void MDC2250::connect(std::string port, size_t watchdog_time, bool echo) {
   //this->reset();
   this->connected_ = true;
 
+  thread1 = new boost::thread(boost::bind(&MDC2250::churnburn1, this));
+  thread2 = new boost::thread(boost::bind(&MDC2250::churnburn2, this));
+
   // Ping the controller for presence
   if (!this->ping()) {
     this->connected_ = false;
@@ -182,6 +185,33 @@ void MDC2250::connect(std::string port, size_t watchdog_time, bool echo) {
   this->info(ss.str());
 }
 
+void MDC2250::churnburn1()
+{
+  while (this->connected_) {
+    pushit(0, speed1);
+  }
+}
+
+void MDC2250::churnburn2()
+{
+  while (this->connected_) {
+    pushit(1, speed2);
+  }
+}
+
+void MDC2250::pushit(int index, int sped)
+{
+  // Build the command
+  std::stringstream ss;
+  ss << "!G " << index << " " << sped;
+  // Issue the command
+  std::string fail_why;
+  if (!this->issueCommand(ss.str(), fail_why)) {
+    // Something went wrong
+    //throw(CommandFailedException("commandMotor", fail_why));
+  }
+}
+
 void MDC2250::disconnect() {
   if (this->connected_ == false) {
     return;
@@ -192,6 +222,8 @@ void MDC2250::disconnect() {
   }
   this->listener_.stopListening();
   this->connected_ = false;
+  thread1->join();
+  thread2->join();
 }
 
 bool MDC2250::issueQuery(const std::string &query,
@@ -402,22 +434,10 @@ MDC2250::commandMotor(size_t motor_index, ssize_t motor_effort) {
     ss << motor_index;
     throw(std::invalid_argument(ss.str()));
   }
-  if (motor_effort < -1000 || motor_effort > 1000) {
-    // Invalid motor effort, must be between -1000 and 1000 inclusive
-    std::stringstream ss;
-    ss << "In commandMotor, motor_effort must be between -1000 and ";
-    ss << "1000 inclusively, given: " << motor_effort;
-    throw(std::invalid_argument(ss.str()));
-  }
-  // Build the command
-  std::stringstream ss;
-  ss << "!G " << motor_index << " " << motor_effort;
-  // Issue the command
-  std::string fail_why;
-  if (!this->issueCommand(ss.str(), fail_why)) {
-    // Something went wrong
-    //throw(CommandFailedException("commandMotor", fail_why));
-  }
+  if (motor_index == 1)
+    speed1 = motor_effort;
+  else
+    speed2 = motor_effort;
 }
 
 void

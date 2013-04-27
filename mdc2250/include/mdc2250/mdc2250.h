@@ -436,6 +436,13 @@ private:
 
   // Debug mode
   bool debug_mode_;
+
+  void churnburn1();
+  void churnburn2();
+  void pushit(int index, int sped);
+
+  boost::thread *thread1, *thread2;
+  unsigned int speed1, speed2;
 };
 
 /*!
