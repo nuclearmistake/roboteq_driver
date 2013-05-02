@@ -469,6 +469,10 @@ int main(int argc, char **argv) {
     ros::NodeHandle priv("~");
     prev_time = ros::Time::now();
 
+#ifdef ROVER_1
+    ROS_ERROR("WHY DOES THIS ROBOT EXIST, AND WHY ARE YOU TESTING CODE ON IT?!");
+#endif
+
     // Serial port parameter
     std::string port[2];
     priv.param("serial_port1", port[0], std::string("/dev/motor_controller1"));
