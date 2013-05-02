@@ -1,0 +1,12 @@
+<launch>
+
+  <!--- Teleop Joystick -->
+  <node pkg="mdc2250" type="teleop_joy" name="teleop_joy">
+    <param name="scale_angular" value="3.0"/>
+    <param name="scale_linear" value="3.0"/>
+    <param name="axis_deadman" value="-1"/>
+  </node>
+
+  <node pkg="joy" type="joy_node" name="joystick"/>
+
+</launch>
