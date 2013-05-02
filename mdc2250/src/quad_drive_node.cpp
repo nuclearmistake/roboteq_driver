@@ -583,7 +583,7 @@ int main(int argc, char **argv) {
     	bool ok = ros::ok();
         while(!conly && !err && conn && ok) {
             ros::spinOnce();
-            ros::Duration(0.01).sleep();
+            ros::Duration(0.001).sleep();
             static ros::Time n = ros::Time::now();
             for(int i=0;i<NUM_VALID_CONTROLLER_PORTS;i++)
             	{
