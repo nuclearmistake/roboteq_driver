@@ -2,3 +2,6 @@
 build
 serial/_gtest_from_src
 serial_utils/_gtest_from_src
+mdc2250/cmake_install.cmake
+serial/cmake_install.cmake
+serial_utils/cmake_install.cmake
