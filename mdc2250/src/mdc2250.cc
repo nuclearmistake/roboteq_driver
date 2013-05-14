@@ -23,10 +23,6 @@ inline void defaultExceptionCallback(const std::exception &error) {
   throw(error);
 }
 
-#define throw( x ) std::stringstream sss__LINE__; \
-    	sss__LINE__ << "__FUNC__ FAILED - " << x.what(); \
-    	this->info(sss__LINE__.str().c_str());
-
 inline void printHex(char * data, int length) {
     for(int i = 0; i < length; ++i) {
         printf("0x%.2X ", (unsigned)(unsigned char)data[i]);

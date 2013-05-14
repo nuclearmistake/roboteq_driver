@@ -22,10 +22,6 @@
 #include <mdc2250/decode.h>
 #include <mdc2250/mdc2250.h>
 
-#define DIAF( x ) std::stringstream ss; \
-    	ss << "__func__ FAILED - " << x.what(); \
-    	ROS_INFO("%s", ss.str().c_str());
-
 #define ENCODER_CPR 360                //  360 clicks / rotation encoders
 unsigned int ENCODER_RPM_AT_1000_EFFORT = 120; //  ~2 m/s
 
@@ -121,8 +117,6 @@ void quad_move(double left, double right)
         mc[0]->commandMotors(left, right);
         return;
     }    
-    try
-    {
 #ifdef ROVER_1
     	mc[0]->commandMotors(left, -right);
     	mc[1]->commandMotors(left, -right);
@@ -130,11 +124,6 @@ void quad_move(double left, double right)
 	mc[0]->commandMotors(left, right);
     	mc[1]->commandMotors(-right, -left);
 #endif
-    }
-    catch(std::exception &ex)
-    {
-    	DIAF(ex)
-    }
 }
 
 double wrapToPi(double angle) {

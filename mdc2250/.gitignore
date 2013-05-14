@@ -29,6 +29,3 @@ cmake_install.cmake
 .cproject
 bin
 src/mdc2250
-../mdc2250/cmake_install.cmake
-../serial/cmake_install.cmake
-../serial_utils/cmake_install.cmake
