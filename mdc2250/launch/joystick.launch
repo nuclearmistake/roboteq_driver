@@ -13,4 +13,6 @@
     <param name="autorepeat_rate" value="50" />
   </node>
 
+  <include file="$(find mdc2250)/launch/quad.launch" />
+
 </launch>

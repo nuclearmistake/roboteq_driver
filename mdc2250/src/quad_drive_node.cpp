@@ -41,7 +41,7 @@ bool erroroccurred;
 bool spam;
 float speed_coefficient = 1.0;
 
-int NUM_VALID_CONTROLLER_PORTS=2;
+int NUM_VALID_CONTROLLER_PORTS=1;
 ros::Publisher odom_pub;
 ros::Publisher encoder_pub;
 ros::Publisher estoppub;
