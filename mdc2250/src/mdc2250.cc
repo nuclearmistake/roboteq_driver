@@ -299,6 +299,8 @@ MDC2250::estop() {
   }
   // Get the resulting state
   this->detect_emergency_stop_();
+  this->estop_ = true;
+  this->info("Estop is enabled.");
 }
 
 void MDC2250::clearEstop() {
@@ -310,6 +312,8 @@ void MDC2250::clearEstop() {
   }
   // Get the resulting state
   this->detect_emergency_stop_();
+  this->estop_ = false;
+  this->info("Estop is disabled.");
 }
 
 void
@@ -517,11 +521,9 @@ void MDC2250::detect_emergency_stop_() {
     //throw(CommandFailedException("detect_echo_", "No echo state response."));
   }
   if (estop_res.find("16") != std::string::npos) {
-    this->estop_ = true;
-    this->info("Estop is enabled.");
+    //this never happens, but would indicate estop was on 
   } else {
-    this->estop_ = false;
-    this->info("Estop is disabled.");
+    //same for off
   }
 }
 

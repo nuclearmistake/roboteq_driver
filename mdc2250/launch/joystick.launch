@@ -1,15 +1,15 @@
 <launch>
-  <arg name="angular" default="0.5" />
-  <arg name="linear" default="1.0" />
+  <arg name="angular" default="1.0" />
+  <arg name="linear" default="1.5" />
 
   <!--- Teleop Joystick -->
-  <node pkg="mdc2250" type="teleop_joy" name="teleop_joy">
+  <node pkg="mdc2250" type="teleop_joy" name="teleop_joy" output="screen" >
     <param name="scale_angular" value="$(arg angular)"/>
     <param name="scale_linear" value="$(arg linear)"/>
     <param name="axis_deadman" value="-1"/>
   </node>
 
-  <node pkg="joy" type="joy_node" name="joystick" >
+  <node pkg="joy" type="joy_node" name="joystick" output="screen" >
     <param name="autorepeat_rate" value="50" />
   </node>
 

@@ -532,7 +532,7 @@ int main(int argc, char **argv) {
 	            mc[i]->setInfoHandler(i==0 ? infoMsgCallback1 : infoMsgCallback2);
 
 	            //                      10000, true
-				mc[i]->connect(port[i], 500, false);
+				mc[i]->connect(port[i], 10000, true);
 	            if (configonly)
 					for(int j=1;j<=2;j++)
 					{
