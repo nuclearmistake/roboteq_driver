@@ -15,12 +15,12 @@
     	<param name="config_only" value="false" />
     	<param name="spam" value="$(arg spam)" />
     </node>
-    <node pkg="mdc2250" type="quad_drive_node" name="quad" output="screen" if="$(arg config_only)" >
-        <param name="serial_port1" value="$(arg serial_port1)"/>
-        <param name="serial_port2" value="$(arg serial_port2)"/>
-        <param name="position_covariance" value="$(arg position_covariance)"/>
-        <param name="rotation_covariance" value="$(arg rotation_covariance)"/>
-    	<param name="config_only" value="true" />
-    	<param name="spam" value="$(arg spam)" />
-    </node>
+        <node pkg="mdc2250" type="quad_drive_node" name="quad" output="screen" if="$(arg config_only)" >
+            <param name="serial_port1" value="$(arg serial_port1)"/>
+            <param name="serial_port2" value="$(arg serial_port2)"/>
+            <param name="position_covariance" value="$(arg position_covariance)"/>
+            <param name="rotation_covariance" value="$(arg rotation_covariance)"/>
+    	    <param name="config_only" value="true" />
+        	<param name="spam" value="$(arg spam)" />
+        </node>
 </launch>

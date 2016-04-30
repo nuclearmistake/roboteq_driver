@@ -39,7 +39,7 @@ bool configured[2];
 ros::Time lasttick[2];
 bool erroroccurred;
 bool spam;
-float speed_coefficient = 1.0;
+float speed_coefficient = 0.5;
 
 int NUM_VALID_CONTROLLER_PORTS=1;
 ros::Publisher odom_pub;
