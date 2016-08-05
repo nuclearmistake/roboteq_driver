@@ -1,4 +1,4 @@
-#include "mdc2250/mdc2250.h"
+#include <mdc2250/mdc2250.h>
 
 #include <iostream>
 #include <algorithm>
@@ -35,7 +35,7 @@ inline void printHex(char * data, int length) {
 using namespace mdc2250;
 using namespace mdc2250_;
 using namespace serial;
-using namespace serial::utils;
+using namespace serial_utils;
 
 // Tokenizes on carriage return or ACK (\x06)
 inline void tokenizer(const std::string &data,
@@ -195,7 +195,7 @@ void MDC2250::disconnect() {
 }
 
 bool MDC2250::issueQuery(const std::string &query,
-                         serial::utils::ComparatorType comparator,
+                         serial_utils::ComparatorType comparator,
                          std::string &response, std::string &failure_reason)
 {
   // BufferedFilter for response
@@ -319,7 +319,7 @@ void MDC2250::clearEstop() {
 void
 MDC2250::setTelemetry(std::string telemetry_queries,
                       size_t period,
-                      serial::utils::DataCallback callback)
+                      serial_utils::DataCallback callback)
 {
   // Stop the current telemetry if it is running
   std::string fail_why;
@@ -346,7 +346,7 @@ MDC2250::setTelemetry(std::string telemetry_queries,
   }
   // Remove old filters
   {
-    std::vector<serial::utils::FilterPtr>::iterator i;
+    std::vector<serial_utils::FilterPtr>::iterator i;
     for (i = telemetry_filters_.begin(); i != telemetry_filters_.end(); i++)
     {
       this->listener_.removeFilter((*i));
@@ -364,7 +364,7 @@ MDC2250::setTelemetry(std::string telemetry_queries,
     match = (*it)+"=";
     if (!issueQuery(cmd, SerialListener::startsWith(match), res, fail_why)) {
       // Something went wrong
-      std::vector<serial::utils::FilterPtr>::iterator i;
+      std::vector<serial_utils::FilterPtr>::iterator i;
       for (i = telemetry_filters_.begin(); i != telemetry_filters_.end(); i++)
       {
         this->listener_.removeFilter((*i));

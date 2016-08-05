@@ -44,13 +44,13 @@
 #include <sstream>
 
 // Boost Headers
-#include "boost/function.hpp"
+#include <boost/function.hpp>
 
 #define SERIAL_LISTENER_DEBUG 0
 
 // Serial Headers
-#include "serial/serial.h"
-#include "serial/utils/serial_listener.h"
+#include <serial/serial.h>
+#include <serial_utils/serial_listener.h>
 
 namespace mdc2250 {
 
@@ -154,7 +154,7 @@ public:
    * \return bool true for success, false for failure.
    */
   bool issueQuery(const std::string &query,
-                  serial::utils::ComparatorType comparator,
+                  serial_utils::ComparatorType comparator,
                   std::string &response,
                   std::string &failure_reason);
 
@@ -238,12 +238,12 @@ public:
    * \params period size_t period in milliseconds between each telemetry 
    * element being sent by the motor controller.
    * 
-   * \params callback serial::utils::DataCallback function to be called when 
+   * \params callback serial_utils::DataCallback function to be called when 
    * new telemetry data has arrived.
    */
   void setTelemetry(std::string telemetry_queries,
                     size_t period,
-                    serial::utils::DataCallback callback);
+                    serial_utils::DataCallback callback);
 
   /*!
    * Commands a given motor to a given motor effort.
@@ -355,7 +355,7 @@ public:
    * \param info_handler A function pointer to the callback to handle new 
    * Info messages.
    * 
-   * \see serial::utils::LoggingCallback
+   * \see serial_utils::LoggingCallback
    */
   void setInfoHandler(LoggingCallback info_handler) {
     this->info = info_handler;
@@ -417,13 +417,13 @@ private:
 
   // Serial port and listener
   serial::Serial                serial_port_;
-  serial::utils::SerialListener listener_;
+  serial_utils::SerialListener listener_;
 
   // Fitlers
-  serial::utils::BufferedFilterPtr ack_filter;
-  serial::utils::BufferedFilterPtr nak_filter;
-  serial::utils::BufferedFilterPtr ping_filter;
-  std::vector<serial::utils::FilterPtr> telemetry_filters_;
+  serial_utils::BufferedFilterPtr ack_filter;
+  serial_utils::BufferedFilterPtr nak_filter;
+  serial_utils::BufferedFilterPtr ping_filter;
+  std::vector<serial_utils::FilterPtr> telemetry_filters_;
 
   // Connection state
   bool connected_;

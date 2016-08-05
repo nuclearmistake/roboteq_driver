@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "mdc2250/mdc2250.h"
-#include "mdc2250/decode.h"
+#include <mdc2250/mdc2250.h>
+#include <mdc2250/decode.h>
 
 void telemetry_callback(const std::string &telemetry) {
   std::cout << "Got telemetry: " << telemetry << std::endl;

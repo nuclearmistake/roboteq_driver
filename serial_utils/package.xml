@@ -1,0 +1,30 @@
+<package>
+  <name>serial_utils</name>
+  <version>1.0.0</version>
+  <description>serial_utils</description>
+  <maintainer email="none@none.net">William Woodall</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/serial_utils</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author>William Woodall</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>serial</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>serial</run_depend>
+
+  <!-- Dependencies needed only for running tests. -->
+  <!-- <test_depend>serial</test_depend> -->
+
+<export>
+    <cpp lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lserial_utils" cflags="-I${prefix}/include"/>
+</export>
+
+</package>

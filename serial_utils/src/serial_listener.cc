@@ -1,6 +1,6 @@
 /* Copyright 2012 William Woodall and John Harrison */
 
-#include "serial/utils/serial_listener.h"
+#include <serial_utils/serial_listener.h>
 
 /***** Inline Functions *****/
 
@@ -14,7 +14,7 @@ inline bool defaultComparator(const std::string &token) {
 }
 
 using namespace serial;
-using namespace serial::utils;
+using namespace serial_utils;
 
 /***** Listener Class Functions *****/
 

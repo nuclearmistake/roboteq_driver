@@ -1,0 +1,34 @@
+<package>
+  <name>roboteq_driver</name>
+  <version>1.0.0</version>
+  <description>Driver for the Roboteq MDC22XX motor controller.
+      Based on a pre-2/26/2012 version of Auburn University's Autonomous Lawnmower project (originally by William Woodall)'s AX2550 driver, merged with a similarly old version of his MDC2250 driver, as well as some very up to date (half backwards compatible) dependancies from PARTS UNKNOWN/UNDOCUMENTED (aka his github account. thx for neglecting to link the dependencies anywhere on the projects that use them, Bill).</description>
+  <maintainer email="nuclearmistake@gmail.com">Resurrected but not supported by Eric McCann</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">somewhere</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author>Resurrected but not supported by Eric McCann</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>mdc2250</run_depend>
+  <run_depend>serial_utils</run_depend>
+  <run_depend>serial</run_depend>
+
+  <!-- Dependencies needed only for running tests. -->
+
+
+
+
+
+
+
+</package>

@@ -1,0 +1,28 @@
+<package>
+  <name>serial</name>
+  <version>1.0.0</version>
+  <description>serial</description>
+  <maintainer email="none@none.gov">William Woodall</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/serial</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author>William Woodall</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+
+  <!-- Dependencies needed after this package is compiled. -->
+
+  <!-- Dependencies needed only for running tests. -->
+
+<export>
+    <cpp lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lserial -lrt -pthread" cflags="-I${prefix}/include"/>
+    <cpp lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lserial" os="osx" cflags="-I${prefix}/include"/>
+</export>
+
+</package>

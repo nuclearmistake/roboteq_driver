@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4.6)
+cmake_minimum_required(VERSION 2.8.3)
 
 set(ROS_ROOT $ENV{ROS_ROOT})
 
@@ -9,7 +9,6 @@ if(DEFINED ROS_ROOT AND NOT MDC2250_BUILD_WIHOUT_ROS)
   include(mdc2250_ros.cmake)
   message("Building with ROS")
   build_mdc2250()
-  rosbuild_add_executable(teleop_joy src/teleop_joy.cpp)
 else(DEFINED ROS_ROOT AND MDC2250_BUILD_WIHOUT_ROS)
   # Build normally
   include(mdc2250.cmake)

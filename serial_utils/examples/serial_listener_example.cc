@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <serial/serial.h>
-#include <serial/utils/serial_listener.h>
+#include <serial_utils/serial_listener.h>
 
 using namespace serial;
 using namespace serial::utils;

@@ -49,7 +49,7 @@
 #include <serial/serial.h>
 
 // Concurrent Queue
-#include "serial/utils/concurrent_queue.h"
+#include <serial_utils/concurrent_queue.h>
 
 // Boost
 #include <boost/function.hpp>
@@ -61,8 +61,7 @@
 # warning SerialListener in debug mode
 #endif
 
-namespace serial {
-  namespace utils {
+namespace serial_utils {
 
 /*!
  * This is an alias to boost::shared_ptr<const std::string> used for tokens.
@@ -880,7 +879,6 @@ private:
 
 };
 
-  } // namespace utils
-} // namespace serial
+} // namespace serial_utils
 
 #endif // SERIAL_LISTENER_H

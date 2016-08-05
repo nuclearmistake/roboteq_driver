@@ -4,8 +4,7 @@
 #include <queue>
 #include <boost/thread.hpp>
 
-namespace serial {
-  namespace utils {
+namespace serial_utils {
 // Based on: http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
 template<typename Data>
 class ConcurrentQueue
@@ -89,7 +88,6 @@ public:
     }
   }
 };
-  }
 }
 
 #endif // CONCURRENT_QUEUE_H

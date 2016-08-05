@@ -10,7 +10,7 @@
 #define private public
 #define protected public
 
-#include "serial/utils/concurrent_queue.h"
+#include "serial_utils/concurrent_queue.h"
 using namespace serial::utils;
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
